@@ -1,11 +1,11 @@
-const express = require('express');
-const { spawn } = require('child_process');
-const basicAuth = require('express-basic-auth');
-const rateLimit = require('express-rate-limit');
-const morgan = require('morgan');
-const helmet = require('helmet');
-const cors = require('cors');
-require('dotenv').config();
+const express = require("express");
+const { spawn } = require("child_process");
+const basicAuth = require("express-basic-auth");
+const rateLimit = require("express-rate-limit");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 
@@ -14,15 +14,15 @@ const app = express();
 // ===========================
 const CONFIG = {
   PORT: process.env.PORT || 3000,
-  AUTH_ENABLED: process.env.AUTH_ENABLED === 'true',
-  AUTH_USERS: process.env.AUTH_USERS || 'admin:changeme',
+  AUTH_ENABLED: process.env.AUTH_ENABLED === "true",
+  AUTH_USERS: process.env.AUTH_USERS || "admin:changeme",
   MAX_PROMPT_LENGTH: parseInt(process.env.MAX_PROMPT_LENGTH) || 100000,
   REQUEST_TIMEOUT: parseInt(process.env.REQUEST_TIMEOUT) || 300000, // 5 minutes
   RATE_LIMIT_WINDOW: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000, // 15 min
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX) || 100,
-  LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-  CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
-  DEFAULT_MODEL: process.env.DEFAULT_MODEL || 'sonnet',
+  LOG_LEVEL: process.env.LOG_LEVEL || "info",
+  CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
+  DEFAULT_MODEL: process.env.DEFAULT_MODEL || "sonnet",
 };
 
 // ===========================
@@ -33,39 +33,41 @@ const CONFIG = {
 app.use(helmet());
 
 // CORS
-app.use(cors({
-  origin: CONFIG.CORS_ORIGIN,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: CONFIG.CORS_ORIGIN,
+    credentials: true,
+  })
+);
 
 // Body parsing
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // Logging
-if (CONFIG.LOG_LEVEL !== 'none') {
-  app.use(morgan('combined'));
+if (CONFIG.LOG_LEVEL !== "none") {
+  app.use(morgan("combined"));
 }
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: CONFIG.RATE_LIMIT_WINDOW,
   max: CONFIG.RATE_LIMIT_MAX,
-  message: { error: 'Too many requests, please try again later.' },
+  message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api/', limiter);
+app.use("/api/", limiter);
 
 // Basic Authentication
 const authMiddleware = basicAuth({
-  users: CONFIG.AUTH_USERS.split(',').reduce((acc, pair) => {
-    const [username, password] = pair.split(':');
+  users: CONFIG.AUTH_USERS.split(",").reduce((acc, pair) => {
+    const [username, password] = pair.split(":");
     acc[username] = password;
     return acc;
   }, {}),
   challenge: true,
-  realm: 'Claude Code API',
+  realm: "Claude Code API",
 });
 
 // Apply auth conditionally
@@ -87,7 +89,7 @@ function executeClaudeCode(options) {
   return new Promise((resolve, reject) => {
     const {
       prompt,
-      outputFormat = 'json',
+      outputFormat = "json",
       model = CONFIG.DEFAULT_MODEL,
       systemPrompt,
       appendSystemPrompt,
@@ -103,89 +105,100 @@ function executeClaudeCode(options) {
       timeout = CONFIG.REQUEST_TIMEOUT,
     } = options;
 
-    const args = ['--print'];
+    const args = ["--print"];
 
     // Output format
-    args.push('--output-format', outputFormat);
-    if (includePartialMessages && outputFormat === 'stream-json') {
-      args.push('--include-partial-messages');
+    args.push("--output-format", outputFormat);
+    if (includePartialMessages && outputFormat === "stream-json") {
+      args.push("--include-partial-messages");
     }
 
     // Model
-    if (model) args.push('--model', model);
+    if (model) args.push("--model", model);
 
     // System prompts
-    if (systemPrompt) args.push('--system-prompt', systemPrompt);
-    if (appendSystemPrompt) args.push('--append-system-prompt', appendSystemPrompt);
+    if (systemPrompt) args.push("--system-prompt", systemPrompt);
+    if (appendSystemPrompt)
+      args.push("--append-system-prompt", appendSystemPrompt);
 
     // Tool controls
     if (allowedTools && allowedTools.length > 0) {
-      args.push('--allowed-tools', allowedTools.join(' '));
+      args.push("--allowed-tools", allowedTools.join(" "));
     }
     if (disallowedTools && disallowedTools.length > 0) {
-      args.push('--disallowed-tools', disallowedTools.join(' '));
+      args.push("--disallowed-tools", disallowedTools.join(" "));
     }
 
     // Permissions
     if (dangerouslySkipPermissions) {
-      args.push('--dangerously-skip-permissions');
+      args.push("--dangerously-skip-permissions");
     }
 
     // Settings
     if (settings) {
-      args.push('--settings', JSON.stringify(settings));
+      args.push("--settings", JSON.stringify(settings));
     }
 
     // MCP Configuration
     if (mcpConfig && mcpConfig.length > 0) {
-      args.push('--mcp-config', ...mcpConfig);
+      args.push("--mcp-config", ...mcpConfig);
     }
 
     // Session management
     if (continueSession) {
-      args.push('--continue');
+      args.push("--continue");
     }
     if (resumeSession) {
-      args.push('--resume', resumeSession);
+      args.push("--resume", resumeSession);
     }
     if (sessionId) {
-      args.push('--session-id', sessionId);
+      args.push("--session-id", sessionId);
     }
 
     // Add prompt last
     args.push(prompt);
 
-    console.log(`[Claude Code] Executing: claude ${args.slice(0, -1).join(' ')} <prompt>`);
+    console.log(
+      `[Claude Code] Executing: claude ${args.slice(0, -1).join(" ")} <prompt>`
+    );
 
-    const claude = spawn('claude', args, {
+    const claude = spawn("claude", args, {
       timeout,
-      killSignal: 'SIGTERM',
+      killSignal: "SIGTERM",
+      stdio: ["ignore", "pipe", "pipe"], // stdin: ignore, stdout: pipe, stderr: pipe
+      env: { ...process.env }, // Inherit environment variables
+      shell: false, // Don't use shell
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
     let killed = false;
 
     const timeoutHandle = setTimeout(() => {
       killed = true;
-      claude.kill('SIGTERM');
-      reject(new Error('Request timeout exceeded'));
+      claude.kill("SIGTERM");
+      reject(new Error("Request timeout exceeded"));
     }, timeout);
 
-    claude.stdout.on('data', (data) => {
+    claude.stdout.on("data", (data) => {
       stdout += data.toString();
     });
 
-    claude.stderr.on('data', (data) => {
-      stderr += data.toString();
+    claude.stderr.on("data", (data) => {
+      const errMsg = data.toString();
+      stderr += errMsg;
+      // Log stderr in real-time for debugging
+      if (errMsg.trim()) {
+        console.error("[Claude stderr]", errMsg.trim());
+      }
     });
 
-    claude.on('error', (error) => {
+    claude.on("error", (error) => {
       clearTimeout(timeoutHandle);
       reject(new Error(`Failed to spawn Claude Code: ${error.message}`));
     });
 
-    claude.on('close', (code) => {
+    claude.on("close", (code) => {
       clearTimeout(timeoutHandle);
 
       if (killed) {
@@ -193,7 +206,9 @@ function executeClaudeCode(options) {
       }
 
       if (code !== 0) {
-        return reject(new Error(`Claude Code exited with code ${code}: ${stderr}`));
+        return reject(
+          new Error(`Claude Code exited with code ${code}: ${stderr}`)
+        );
       }
 
       resolve({ stdout, stderr });
@@ -205,7 +220,7 @@ function executeClaudeCode(options) {
  * Parse Claude Code output
  */
 function parseOutput(stdout, outputFormat) {
-  if (outputFormat === 'json') {
+  if (outputFormat === "json") {
     try {
       return JSON.parse(stdout);
     } catch (e) {
@@ -222,15 +237,20 @@ function validateRequest(body) {
   const errors = [];
 
   if (!body.prompt) {
-    errors.push('prompt is required');
+    errors.push("prompt is required");
   }
 
   if (body.prompt && body.prompt.length > CONFIG.MAX_PROMPT_LENGTH) {
-    errors.push(`prompt exceeds maximum length of ${CONFIG.MAX_PROMPT_LENGTH} characters`);
+    errors.push(
+      `prompt exceeds maximum length of ${CONFIG.MAX_PROMPT_LENGTH} characters`
+    );
   }
 
-  if (body.outputFormat && !['text', 'json', 'stream-json'].includes(body.outputFormat)) {
-    errors.push('outputFormat must be one of: text, json, stream-json');
+  if (
+    body.outputFormat &&
+    !["text", "json", "stream-json"].includes(body.outputFormat)
+  ) {
+    errors.push("outputFormat must be one of: text, json, stream-json");
   }
 
   return errors;
@@ -243,9 +263,9 @@ function validateRequest(body) {
 /**
  * Health check endpoint
  */
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.json({
-    status: 'healthy',
+    status: "healthy",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
@@ -254,14 +274,14 @@ app.get('/health', (req, res) => {
 /**
  * API Info endpoint
  */
-app.get('/api/info', maybeAuth, (req, res) => {
+app.get("/api/info", maybeAuth, (req, res) => {
   res.json({
-    version: '1.0.0',
+    version: "1.0.0",
     endpoints: {
-      '/api/ask': 'Simple prompt execution',
-      '/api/process': 'Advanced prompt execution with all options',
-      '/api/stream': 'Streaming response',
-      '/api/batch': 'Batch processing multiple prompts',
+      "/api/ask": "Simple prompt execution",
+      "/api/process": "Advanced prompt execution with all options",
+      "/api/stream": "Streaming response",
+      "/api/batch": "Batch processing multiple prompts",
     },
     config: {
       authEnabled: CONFIG.AUTH_ENABLED,
@@ -277,14 +297,14 @@ app.get('/api/info', maybeAuth, (req, res) => {
 /**
  * Simple ask endpoint
  */
-app.post('/api/ask', maybeAuth, async (req, res) => {
+app.post("/api/ask", maybeAuth, async (req, res) => {
   try {
     const errors = validateRequest(req.body);
     if (errors.length > 0) {
       return res.status(400).json({ errors });
     }
 
-    const { prompt, outputFormat = 'json', model, systemPrompt } = req.body;
+    const { prompt, outputFormat = "json", model, systemPrompt } = req.body;
 
     const result = await executeClaudeCode({
       prompt,
@@ -296,9 +316,9 @@ app.post('/api/ask', maybeAuth, async (req, res) => {
     const parsed = parseOutput(result.stdout, outputFormat);
     res.json(parsed);
   } catch (error) {
-    console.error('[Error]', error);
+    console.error("[Error]", error);
     res.status(500).json({
-      error: 'Failed to process request',
+      error: "Failed to process request",
       message: error.message,
     });
   }
@@ -307,7 +327,7 @@ app.post('/api/ask', maybeAuth, async (req, res) => {
 /**
  * Advanced process endpoint
  */
-app.post('/api/process', maybeAuth, async (req, res) => {
+app.post("/api/process", maybeAuth, async (req, res) => {
   try {
     const errors = validateRequest(req.body);
     if (errors.length > 0) {
@@ -315,22 +335,22 @@ app.post('/api/process', maybeAuth, async (req, res) => {
     }
 
     const result = await executeClaudeCode(req.body);
-    const parsed = parseOutput(result.stdout, req.body.outputFormat || 'json');
+    const parsed = parseOutput(result.stdout, req.body.outputFormat || "json");
 
     res.json({
       success: true,
       data: parsed,
       metadata: {
         model: req.body.model || CONFIG.DEFAULT_MODEL,
-        outputFormat: req.body.outputFormat || 'json',
+        outputFormat: req.body.outputFormat || "json",
         timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error('[Error]', error);
+    console.error("[Error]", error);
     res.status(500).json({
       success: false,
-      error: 'Failed to process request',
+      error: "Failed to process request",
       message: error.message,
     });
   }
@@ -339,7 +359,7 @@ app.post('/api/process', maybeAuth, async (req, res) => {
 /**
  * Streaming endpoint
  */
-app.post('/api/stream', maybeAuth, async (req, res) => {
+app.post("/api/stream", maybeAuth, async (req, res) => {
   try {
     const errors = validateRequest(req.body);
     if (errors.length > 0) {
@@ -354,53 +374,57 @@ app.post('/api/stream', maybeAuth, async (req, res) => {
       includePartialMessages = true,
     } = req.body;
 
-    const args = [
-      '--print',
-      '--output-format', 'stream-json',
-    ];
+    const args = ["--print", "--output-format", "stream-json"];
 
-    if (includePartialMessages) args.push('--include-partial-messages');
-    if (model) args.push('--model', model);
-    if (systemPrompt) args.push('--system-prompt', systemPrompt);
-    if (appendSystemPrompt) args.push('--append-system-prompt', appendSystemPrompt);
+    if (includePartialMessages) args.push("--include-partial-messages");
+    if (model) args.push("--model", model);
+    if (systemPrompt) args.push("--system-prompt", systemPrompt);
+    if (appendSystemPrompt)
+      args.push("--append-system-prompt", appendSystemPrompt);
 
     args.push(prompt);
 
-    res.setHeader('Content-Type', 'application/x-ndjson');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Transfer-Encoding", "chunked");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("X-Accel-Buffering", "no");
 
-    const claude = spawn('claude', args);
+    const claude = spawn("claude", args, {
+      stdio: ["ignore", "pipe", "pipe"], // stdin: ignore, stdout: pipe, stderr: pipe
+      env: { ...process.env }, // Inherit environment variables
+      shell: false, // Don't use shell
+    });
 
-    claude.stdout.on('data', (data) => {
+    claude.stdout.on("data", (data) => {
       res.write(data);
     });
 
-    claude.stderr.on('data', (data) => {
-      console.error('[Claude stderr]', data.toString());
+    claude.stderr.on("data", (data) => {
+      console.error("[Claude stderr]", data.toString());
     });
 
-    claude.on('close', (code) => {
+    claude.on("close", (code) => {
       if (code !== 0) {
-        res.write(JSON.stringify({ error: `Process exited with code ${code}` }) + '\n');
+        res.write(
+          JSON.stringify({ error: `Process exited with code ${code}` }) + "\n"
+        );
       }
       res.end();
     });
 
-    claude.on('error', (err) => {
-      res.write(JSON.stringify({ error: err.message }) + '\n');
+    claude.on("error", (err) => {
+      res.write(JSON.stringify({ error: err.message }) + "\n");
       res.end();
     });
 
     // Handle client disconnect
-    req.on('close', () => {
-      claude.kill('SIGTERM');
+    req.on("close", () => {
+      claude.kill("SIGTERM");
     });
   } catch (error) {
-    console.error('[Error]', error);
+    console.error("[Error]", error);
     res.status(500).json({
-      error: 'Failed to start streaming',
+      error: "Failed to start streaming",
       message: error.message,
     });
   }
@@ -409,16 +433,16 @@ app.post('/api/stream', maybeAuth, async (req, res) => {
 /**
  * Batch processing endpoint
  */
-app.post('/api/batch', maybeAuth, async (req, res) => {
+app.post("/api/batch", maybeAuth, async (req, res) => {
   try {
     const { prompts, ...commonOptions } = req.body;
 
     if (!prompts || !Array.isArray(prompts) || prompts.length === 0) {
-      return res.status(400).json({ error: 'prompts array is required' });
+      return res.status(400).json({ error: "prompts array is required" });
     }
 
     if (prompts.length > 10) {
-      return res.status(400).json({ error: 'Maximum 10 prompts per batch' });
+      return res.status(400).json({ error: "Maximum 10 prompts per batch" });
     }
 
     const results = [];
@@ -429,12 +453,15 @@ app.post('/api/batch', maybeAuth, async (req, res) => {
         const prompt = prompts[i];
         const result = await executeClaudeCode({
           ...commonOptions,
-          prompt: typeof prompt === 'string' ? prompt : prompt.prompt,
+          prompt: typeof prompt === "string" ? prompt : prompt.prompt,
           model: prompt.model || commonOptions.model,
           systemPrompt: prompt.systemPrompt || commonOptions.systemPrompt,
         });
 
-        const parsed = parseOutput(result.stdout, commonOptions.outputFormat || 'json');
+        const parsed = parseOutput(
+          result.stdout,
+          commonOptions.outputFormat || "json"
+        );
         results.push({
           index: i,
           success: true,
@@ -460,9 +487,9 @@ app.post('/api/batch', maybeAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Error]', error);
+    console.error("[Error]", error);
     res.status(500).json({
-      error: 'Failed to process batch',
+      error: "Failed to process batch",
       message: error.message,
     });
   }
@@ -471,22 +498,22 @@ app.post('/api/batch', maybeAuth, async (req, res) => {
 /**
  * Test Claude Code availability
  */
-app.get('/api/test', maybeAuth, async (req, res) => {
+app.get("/api/test", maybeAuth, async (req, res) => {
   try {
     const result = await executeClaudeCode({
       prompt: 'Say "Hello from Claude Code API!"',
-      outputFormat: 'text',
+      outputFormat: "text",
     });
 
     res.json({
       success: true,
-      message: 'Claude Code is working correctly',
+      message: "Claude Code is working correctly",
       response: result.stdout.trim(),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Claude Code is not available or not working',
+      message: "Claude Code is not available or not working",
       error: error.message,
     });
   }
@@ -499,16 +526,16 @@ app.get('/api/test', maybeAuth, async (req, res) => {
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
-    error: 'Not Found',
+    error: "Not Found",
     message: `Route ${req.method} ${req.path} not found`,
   });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('[Global Error]', err);
+  console.error("[Global Error]", err);
   res.status(err.status || 500).json({
-    error: 'Internal Server Error',
+    error: "Internal Server Error",
     message: err.message,
   });
 });
@@ -517,16 +544,22 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ===========================
 
-app.listen(CONFIG.PORT, () => {
-  console.log('='.repeat(50));
-  console.log('Claude Code API Server');
-  console.log('='.repeat(50));
+app.listen(CONFIG.PORT, "0.0.0.0", () => {
+  console.log("=".repeat(50));
+  console.log("Claude Code API Server");
+  console.log("=".repeat(50));
   console.log(`Port: ${CONFIG.PORT}`);
-  console.log(`Authentication: ${CONFIG.AUTH_ENABLED ? 'ENABLED' : 'DISABLED'}`);
+  console.log(
+    `Authentication: ${CONFIG.AUTH_ENABLED ? "ENABLED" : "DISABLED"}`
+  );
   console.log(`Default Model: ${CONFIG.DEFAULT_MODEL}`);
-  console.log(`Rate Limit: ${CONFIG.RATE_LIMIT_MAX} requests per ${CONFIG.RATE_LIMIT_WINDOW / 60000} minutes`);
-  console.log('='.repeat(50));
-  console.log('Endpoints:');
+  console.log(
+    `Rate Limit: ${CONFIG.RATE_LIMIT_MAX} requests per ${
+      CONFIG.RATE_LIMIT_WINDOW / 60000
+    } minutes`
+  );
+  console.log("=".repeat(50));
+  console.log("Endpoints:");
   console.log(`  GET  /health`);
   console.log(`  GET  /api/info`);
   console.log(`  GET  /api/test`);
@@ -534,18 +567,18 @@ app.listen(CONFIG.PORT, () => {
   console.log(`  POST /api/process`);
   console.log(`  POST /api/stream`);
   console.log(`  POST /api/batch`);
-  console.log('='.repeat(50));
-  console.log(`Server is running on http://localhost:${CONFIG.PORT}`);
-  console.log('='.repeat(50));
+  console.log("=".repeat(50));
+  console.log(`Server is running on port ${CONFIG.PORT}`);
+  console.log("=".repeat(50));
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down gracefully...");
   process.exit(0);
 });
