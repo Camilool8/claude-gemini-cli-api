@@ -484,7 +484,7 @@ app.get("/api/info", maybeAuth, (req, res) => {
       requestTimeout: CONFIG.REQUEST_TIMEOUT,
       rateLimitWindow: CONFIG.RATE_LIMIT_WINDOW,
       rateLimitMax: CONFIG.RATE_LIMIT_MAX,
-      defaultModel: CONFIG.DEFAULT_MODEL,
+      defaultModel: getDefaultModel(CONFIG.DEFAULT_CLI),
       defaultCLI: CONFIG.DEFAULT_CLI,
       fallbackEnabled: CONFIG.ENABLE_FALLBACK,
     },
@@ -824,7 +824,7 @@ app.listen(CONFIG.PORT, "0.0.0.0", () => {
   );
   console.log(`Default CLI: ${CONFIG.DEFAULT_CLI.toUpperCase()}`);
   console.log(`Fallback: ${CONFIG.ENABLE_FALLBACK ? "ENABLED" : "DISABLED"}`);
-  console.log(`Default Model: ${CONFIG.DEFAULT_MODEL}`);
+  console.log(`Default Model: ${getDefaultModel(CONFIG.DEFAULT_CLI)}`);
   console.log(
     `Rate Limit: ${CONFIG.RATE_LIMIT_MAX} requests per ${
       CONFIG.RATE_LIMIT_WINDOW / 60000
