@@ -35,7 +35,7 @@ claude setup-token
 ### Gemini CLI
 
 ```bash
-npm install -g @google/generative-ai-cli
+npm install -g @google/gemini-cli
 # Or follow installation instructions from Google
 ```
 
@@ -47,7 +47,7 @@ Clone or download the repository:
 
 ```bash
 git clone <your-repo>
-cd claude-code-api
+cd claude-gemini-cli-api
 ```
 
 Install dependencies:
@@ -77,7 +77,7 @@ CORS_ORIGIN=*
 DEFAULT_CLI=claude
 ENABLE_FALLBACK=true
 CLAUDE_DEFAULT_MODEL=sonnet
-GEMINI_DEFAULT_MODEL=gemini-2.0-flash-exp
+GEMINI_DEFAULT_MODEL=gemini-2.5-flash
 ```
 
 Start the server:
@@ -569,21 +569,21 @@ docker-compose up -d
 
 ### Environment Variables
 
-| Variable                | Default                  | Description                                      |
-| ----------------------- | ------------------------ | ------------------------------------------------ |
-| `PORT`                  | `3000`                   | Server port                                      |
-| `AUTH_ENABLED`          | `false`                  | Enable authentication                            |
-| `AUTH_USERS`            | `admin:changeme`         | Comma-separated user:pass pairs                  |
-| `MAX_PROMPT_LENGTH`     | `100000`                 | Maximum prompt length in characters              |
-| `REQUEST_TIMEOUT`       | `300000`                 | Request timeout in milliseconds (5 min)          |
-| `RATE_LIMIT_WINDOW`     | `900000`                 | Rate limit window in ms (15 min)                 |
-| `RATE_LIMIT_MAX`        | `100`                    | Max requests per window                          |
-| `LOG_LEVEL`             | `info`                   | Logging level (info/combined/none)               |
-| `CORS_ORIGIN`           | `*`                      | Allowed CORS origins                             |
-| `DEFAULT_CLI`           | `claude`                 | Default CLI to use (`claude` or `gemini`)        |
-| `ENABLE_FALLBACK`       | `true`                   | Enable automatic fallback to alternate CLI       |
-| `CLAUDE_DEFAULT_MODEL`  | `sonnet`                 | Default model for Claude CLI (sonnet/opus/haiku) |
-| `GEMINI_DEFAULT_MODEL`  | `gemini-2.0-flash-exp`   | Default model for Gemini CLI                     |
+| Variable               | Default                | Description                                      |
+| ---------------------- | ---------------------- | ------------------------------------------------ |
+| `PORT`                 | `3000`                 | Server port                                      |
+| `AUTH_ENABLED`         | `false`                | Enable authentication                            |
+| `AUTH_USERS`           | `admin:changeme`       | Comma-separated user:pass pairs                  |
+| `MAX_PROMPT_LENGTH`    | `100000`               | Maximum prompt length in characters              |
+| `REQUEST_TIMEOUT`      | `300000`               | Request timeout in milliseconds (5 min)          |
+| `RATE_LIMIT_WINDOW`    | `900000`               | Rate limit window in ms (15 min)                 |
+| `RATE_LIMIT_MAX`       | `100`                  | Max requests per window                          |
+| `LOG_LEVEL`            | `info`                 | Logging level (info/combined/none)               |
+| `CORS_ORIGIN`          | `*`                    | Allowed CORS origins                             |
+| `DEFAULT_CLI`          | `claude`               | Default CLI to use (`claude` or `gemini`)        |
+| `ENABLE_FALLBACK`      | `true`                 | Enable automatic fallback to alternate CLI       |
+| `CLAUDE_DEFAULT_MODEL` | `sonnet`               | Default model for Claude CLI (sonnet/opus/haiku) |
+| `GEMINI_DEFAULT_MODEL` | `gemini-2.0-flash-exp` | Default model for Gemini CLI                     |
 
 ## CLI Selection and Fallback
 
