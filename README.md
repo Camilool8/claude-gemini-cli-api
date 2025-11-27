@@ -1,10 +1,14 @@
-# Claude Code API
+# AI CLI API (Claude Code & Gemini CLI)
 
-A production-ready REST API wrapper for Claude Code CLI, designed for integration with automation platforms like n8n.
+A production-ready REST API wrapper for both Claude Code CLI and Gemini CLI, designed for integration with automation platforms like n8n. Supports automatic fallback between CLIs for maximum reliability.
 
 ## Features
 
-- RESTful API with simple HTTP endpoints
+- **Dual CLI Support**: Use Claude Code or Gemini CLI interchangeably
+- **Automatic Fallback**: If one CLI fails, automatically tries the other
+- **RESTful API** with simple HTTP endpoints
+- **CLI Selection**: Choose which CLI to use per request or use defaults
+- **Metadata Tracking**: Know which CLI handled each request
 - Basic authentication for secure access
 - Rate limiting to prevent abuse
 - Comprehensive request logging
@@ -19,12 +23,23 @@ A production-ready REST API wrapper for Claude Code CLI, designed for integratio
 
 **Node.js** (v16 or higher)
 
-**Claude Code CLI** must be installed and authenticated:
+**At least one CLI must be installed:**
+
+### Claude Code CLI
 
 ```bash
 npm install -g @anthropic-ai/claude-code
 claude setup-token
 ```
+
+### Gemini CLI
+
+```bash
+npm install -g @google/generative-ai-cli
+# Or follow installation instructions from Google
+```
+
+**Note**: You can install both CLIs to enable automatic fallback. If only one is installed, set it as the default in your configuration.
 
 ## Installation
 
@@ -59,7 +74,10 @@ RATE_LIMIT_WINDOW=900000
 RATE_LIMIT_MAX=100
 LOG_LEVEL=info
 CORS_ORIGIN=*
-DEFAULT_MODEL=sonnet
+DEFAULT_CLI=claude
+ENABLE_FALLBACK=true
+CLAUDE_DEFAULT_MODEL=sonnet
+GEMINI_DEFAULT_MODEL=gemini-2.0-flash-exp
 ```
 
 Start the server:
@@ -118,19 +136,24 @@ Returns API information and current configuration.
 }
 ```
 
-### Test Claude Code
+### Test AI CLI
 
-**GET** `/api/test`
+**GET** `/api/test?cli=claude` or `/api/test?cli=gemini`
 
-Verifies that Claude Code is working correctly.
+Verifies that the specified CLI is working correctly. If no CLI is specified, tests the default CLI.
+
+**Query Parameters:**
+
+- `cli` (optional): CLI to test (`claude` or `gemini`)
 
 **Response:**
 
 ```json
 {
   "success": true,
-  "message": "Claude Code is working correctly",
-  "response": "Hello from Claude Code API!"
+  "message": "Claude CLI is working correctly",
+  "response": "Hello from Claude CLI API!",
+  "usedCLI": "claude"
 }
 ```
 
@@ -147,7 +170,8 @@ The recommended endpoint for most use cases. Executes a prompt with minimal conf
   "prompt": "Summarize this text in 3 bullet points: [YOUR TEXT]",
   "outputFormat": "json",
   "model": "sonnet",
-  "systemPrompt": "You are a helpful assistant"
+  "systemPrompt": "You are a helpful assistant",
+  "cli": "claude"
 }
 ```
 
@@ -155,22 +179,33 @@ The recommended endpoint for most use cases. Executes a prompt with minimal conf
 
 - `prompt` (required): The prompt text to execute
 - `outputFormat` (optional): Output format - `text`, `json`, or `stream-json` (default: `json`)
-- `model` (optional): Model to use (default: `sonnet`)
+- `model` (optional): Model to use (default: `sonnet` for Claude, `gemini-2.0-flash-exp` for Gemini)
 - `systemPrompt` (optional): Custom system prompt
+- `cli` (optional): Which CLI to use - `claude` or `gemini` (default: from config)
 
 **Response:**
 
 ```json
 {
-  "response": "Your answer here..."
+  "response": "Your answer here...",
+  "_meta": {
+    "usedCLI": "claude",
+    "fallbackUsed": false
+  }
 }
 ```
+
+**Notes:**
+
+- If the specified CLI fails and fallback is enabled, the API will automatically try the other CLI
+- The `_meta` field in the response tells you which CLI was actually used
+- Setting `disableFallback: true` in the request body will prevent automatic fallback
 
 ### Advanced Process
 
 **POST** `/api/process`
 
-Advanced execution with full access to Claude Code options.
+Advanced execution with full access to Claude Code and Gemini CLI options.
 
 **Request Body:**
 
@@ -179,11 +214,13 @@ Advanced execution with full access to Claude Code options.
   "prompt": "Analyze this data",
   "outputFormat": "json",
   "model": "sonnet",
+  "cli": "claude",
   "systemPrompt": "You are a data analyst",
   "appendSystemPrompt": "Always output valid JSON",
   "allowedTools": ["Bash", "Edit"],
   "disallowedTools": ["WebSearch"],
   "dangerouslySkipPermissions": false,
+  "disableFallback": false,
   "settings": {
     "customOption": "value"
   },
@@ -199,15 +236,17 @@ Advanced execution with full access to Claude Code options.
 - `prompt` (required): The prompt to execute
 - `outputFormat`: Output format
 - `model`: Model name or alias
+- `cli` (optional): Which CLI to use (`claude` or `gemini`)
 - `systemPrompt`: Replace default system prompt
-- `appendSystemPrompt`: Add to default system prompt
+- `appendSystemPrompt`: Add to default system prompt (Claude only)
 - `allowedTools`: Array of allowed tools
 - `disallowedTools`: Array of disallowed tools
-- `dangerouslySkipPermissions`: Skip permission checks (use with caution)
-- `settings`: Additional settings object
-- `mcpConfig`: Array of MCP config file paths
+- `dangerouslySkipPermissions`: Skip permission checks (use with caution, maps to `--yolo` in Gemini)
+- `disableFallback`: Set to `true` to prevent automatic fallback
+- `settings`: Additional settings object (Claude only)
+- `mcpConfig`: Array of MCP config file paths (Claude only)
 - `sessionId`: Specific session ID to use
-- `continueSession`: Continue most recent conversation
+- `continueSession`: Continue most recent conversation (Claude only)
 - `resumeSession`: Resume specific session by ID
 
 **Response:**
@@ -221,7 +260,9 @@ Advanced execution with full access to Claude Code options.
   "metadata": {
     "model": "sonnet",
     "outputFormat": "json",
-    "timestamp": "2024-01-01T12:00:00.000Z"
+    "timestamp": "2024-01-01T12:00:00.000Z",
+    "usedCLI": "claude",
+    "fallbackUsed": false
   }
 }
 ```
@@ -238,10 +279,16 @@ Returns real-time streaming responses as NDJSON.
 {
   "prompt": "Write a long story",
   "model": "sonnet",
+  "cli": "claude",
   "systemPrompt": "You are a creative writer",
   "includePartialMessages": true
 }
 ```
+
+**Parameters:**
+
+- `cli` (optional): Which CLI to use (`claude` or `gemini`)
+- `includePartialMessages` (optional): Include partial messages in stream (Claude only, default: `true`)
 
 **Response:**
 
@@ -270,14 +317,25 @@ Process multiple prompts in sequence.
     {
       "prompt": "Translate: [text3]",
       "model": "opus",
+      "cli": "claude",
       "systemPrompt": "You are a translator"
+    },
+    {
+      "prompt": "Calculate: 15 * 23",
+      "cli": "gemini"
     }
   ],
   "outputFormat": "json",
   "model": "sonnet",
+  "cli": "claude",
   "systemPrompt": "Default system prompt"
 }
 ```
+
+**Parameters:**
+
+- Each prompt can specify its own `cli`, `model`, and `systemPrompt`
+- Common options apply to all prompts that don't override them
 
 **Response:**
 
@@ -288,12 +346,16 @@ Process multiple prompts in sequence.
     {
       "index": 0,
       "success": true,
-      "data": { "response": "..." }
+      "data": { "response": "..." },
+      "usedCLI": "claude",
+      "fallbackUsed": false
     },
     {
       "index": 1,
       "success": true,
-      "data": { "response": "..." }
+      "data": { "response": "..." },
+      "usedCLI": "gemini",
+      "fallbackUsed": true
     }
   ],
   "summary": {
@@ -507,18 +569,81 @@ docker-compose up -d
 
 ### Environment Variables
 
-| Variable            | Default          | Description                             |
-| ------------------- | ---------------- | --------------------------------------- |
-| `PORT`              | `3000`           | Server port                             |
-| `AUTH_ENABLED`      | `false`          | Enable authentication                   |
-| `AUTH_USERS`        | `admin:changeme` | Comma-separated user:pass pairs         |
-| `MAX_PROMPT_LENGTH` | `100000`         | Maximum prompt length in characters     |
-| `REQUEST_TIMEOUT`   | `300000`         | Request timeout in milliseconds (5 min) |
-| `RATE_LIMIT_WINDOW` | `900000`         | Rate limit window in ms (15 min)        |
-| `RATE_LIMIT_MAX`    | `100`            | Max requests per window                 |
-| `LOG_LEVEL`         | `info`           | Logging level (info/combined/none)      |
-| `CORS_ORIGIN`       | `*`              | Allowed CORS origins                    |
-| `DEFAULT_MODEL`     | `sonnet`         | Default Claude model                    |
+| Variable                | Default                  | Description                                      |
+| ----------------------- | ------------------------ | ------------------------------------------------ |
+| `PORT`                  | `3000`                   | Server port                                      |
+| `AUTH_ENABLED`          | `false`                  | Enable authentication                            |
+| `AUTH_USERS`            | `admin:changeme`         | Comma-separated user:pass pairs                  |
+| `MAX_PROMPT_LENGTH`     | `100000`                 | Maximum prompt length in characters              |
+| `REQUEST_TIMEOUT`       | `300000`                 | Request timeout in milliseconds (5 min)          |
+| `RATE_LIMIT_WINDOW`     | `900000`                 | Rate limit window in ms (15 min)                 |
+| `RATE_LIMIT_MAX`        | `100`                    | Max requests per window                          |
+| `LOG_LEVEL`             | `info`                   | Logging level (info/combined/none)               |
+| `CORS_ORIGIN`           | `*`                      | Allowed CORS origins                             |
+| `DEFAULT_CLI`           | `claude`                 | Default CLI to use (`claude` or `gemini`)        |
+| `ENABLE_FALLBACK`       | `true`                   | Enable automatic fallback to alternate CLI       |
+| `CLAUDE_DEFAULT_MODEL`  | `sonnet`                 | Default model for Claude CLI (sonnet/opus/haiku) |
+| `GEMINI_DEFAULT_MODEL`  | `gemini-2.0-flash-exp`   | Default model for Gemini CLI                     |
+
+## CLI Selection and Fallback
+
+### How It Works
+
+The API supports both Claude Code CLI and Gemini CLI with intelligent fallback:
+
+1. **Default Behavior**: Uses `DEFAULT_CLI` from config (default: `claude`)
+2. **Per-Request Override**: Specify `"cli": "gemini"` or `"cli": "claude"` in request body
+3. **Automatic Fallback**: If primary CLI fails and `ENABLE_FALLBACK=true`, automatically tries the other CLI
+4. **Metadata Tracking**: All responses include which CLI was used and whether fallback occurred
+
+### CLI-Specific Features
+
+**Claude Code CLI:**
+
+- Full support for all options (session management, MCP config, tool control)
+- `--append-system-prompt` flag
+- `--include-partial-messages` for streaming
+- Session continuation with `--continue` and `--resume`
+
+**Gemini CLI:**
+
+- Simplified parameter mapping
+- System prompts are prepended to user prompt
+- `--yolo` flag for auto-approval (maps to `dangerouslySkipPermissions`)
+- Native support for Gemini models
+
+### Examples
+
+**Force specific CLI:**
+
+```json
+{
+  "prompt": "Explain AI",
+  "cli": "gemini",
+  "disableFallback": true
+}
+```
+
+**Let API choose with fallback:**
+
+```json
+{
+  "prompt": "Explain AI"
+  // Uses DEFAULT_CLI, falls back if needed
+}
+```
+
+**Check which CLI was used:**
+
+```javascript
+const response = await fetch("/api/ask", {
+  method: "POST",
+  body: JSON.stringify({ prompt: "Hello" }),
+});
+const result = await response.json();
+console.log(`Used: ${result._meta.usedCLI}`);
+console.log(`Fallback: ${result._meta.fallbackUsed}`);
+```
 
 ## Testing
 

@@ -1,20 +1,28 @@
 module.exports = {
   apps: [{
-    name: 'claude-api',
+    name: 'ai-cli-api',
     script: './server.js',
-    
+
     // Process management
     instances: 'max',
     exec_mode: 'cluster',
-    
+
     // Environment
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 3000,
+      DEFAULT_CLI: 'claude',
+      ENABLE_FALLBACK: 'true',
+      CLAUDE_DEFAULT_MODEL: 'sonnet',
+      GEMINI_DEFAULT_MODEL: 'gemini-2.0-flash-exp'
     },
     env_development: {
       NODE_ENV: 'development',
-      PORT: 3000
+      PORT: 3000,
+      DEFAULT_CLI: 'claude',
+      ENABLE_FALLBACK: 'true',
+      CLAUDE_DEFAULT_MODEL: 'sonnet',
+      GEMINI_DEFAULT_MODEL: 'gemini-2.0-flash-exp'
     },
     
     // Logging
